@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+        ('isAdmin' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    match /users/{userId} {
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isOwner(userId);
+      allow update: if isOwner(userId) &&
+                    (!('isAdmin' in request.resource.data) || 
+                    request.resource.data.isAdmin == resource.data.isAdmin);
+      allow delete: if false;
+    }
+    
+    match /favorites/{favoriteId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+    
+    match /podcasts/{podcastId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && 
+                    (request.auth.uid == resource.data.userId || 
+                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])));
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+    
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
