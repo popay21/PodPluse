@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, deleteDoc, doc, query, where, getDoc, setDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, deleteDoc, doc,  getDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { Podcast } from "../types";
 
