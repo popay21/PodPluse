@@ -1,7 +1,7 @@
 // src/utils/adminCheck.ts
 
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { db } from "../config/firebase.config";
 
 // פונקציה לבדיקת האם משתמש הוא מנהל על סמך מזהה המשתמש
 export const isAdmin = async (userId: string): Promise<boolean> => {

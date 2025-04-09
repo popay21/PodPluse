@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db, auth } from '../config/firebase.config';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Podcast } from '../types';
 import Comments from '../components/Comments';

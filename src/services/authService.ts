@@ -1,9 +1,9 @@
-import { auth, db } from "../firebase";
+import { auth, db } from "../config/firebase.config";
 import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut,
-  User
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword, 
+    signOut,
+    User 
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 

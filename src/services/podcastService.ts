@@ -1,104 +1,135 @@
-import { collection, addDoc, getDocs, deleteDoc, doc,  getDoc, setDoc } from "firebase/firestore";
-import { db } from "../firebase";
-import { Podcast } from "../types";
+// src/services/podcastService.ts
 
-const podcastCollection = collection(db, "podcasts"); // הפניה לאוסף הפודקאסטים ב-Firestore
+import { db, storage } from '../config/firebase.config';
+import { 
+    collection, 
+    addDoc, 
+    getDocs, 
+    deleteDoc, 
+    doc, 
+    query, 
+    where,
+    getDoc, 
+    setDoc 
+} from "firebase/firestore";
+import { 
+    ref, 
+    uploadBytes, 
+    getDownloadURL,
+    deleteObject 
+} from "firebase/storage";
+import { Podcast } from '../types';
 
-// פונקציה להוספת פודקאסט חדש למסד הנתונים
-export const addPodcast = async (podcastData: Partial<Podcast>): Promise<string> => {
-  try {
-    const docRef = await addDoc(podcastCollection, {
-      ...podcastData,
-      createdAt: new Date() // הוספת תאריך יצירה
-    });
-    return docRef.id; // החזרת מזהה הפודקאסט שנוסף
-  } catch (error) {
-    console.error("Error adding podcast: ", error);
-    throw error; // זריקת שגיאה כדי לטפל בה בחוץ
-  }
+// נגדיר ממשק לנתונים שנדרשים ליצירת פודקאסט חדש
+interface CreatePodcastData {
+    title: string;
+    description: string;
+    category?: string;
+    createdBy: string;
+    audioFile?: File;
+    imageFile?: File;
+}
+
+// פונקציה מסייעת להעלאת קבצים לאחסון
+const uploadFile = async (file: File, path: string) => {
+    const storageRef = ref(storage, path);
+    const snapshot = await uploadBytes(storageRef, file);
+    return getDownloadURL(snapshot.ref);
 };
 
-// פונקציה לקבלת כל הפודקאסטים מהמסד נתונים
+// פונקציות עיקריות לניהול פודקאסטים
+export const addPodcast = async (podcastData: CreatePodcastData): Promise<string> => {
+    try {
+        // מעלים קודם את הקבצים אם יש
+        let audioUrl = '';
+        let imageUrl = '';
+
+        if (podcastData.audioFile) {
+            audioUrl = await uploadFile(
+                podcastData.audioFile,
+                `podcasts/audio/${podcastData.audioFile.name}`
+            );
+        }
+
+        if (podcastData.imageFile) {
+            imageUrl = await uploadFile(
+                podcastData.imageFile,
+                `podcasts/images/${podcastData.imageFile.name}`
+            );
+        }
+
+        // מוסיפים את הפודקאסט למסד הנתונים
+        const docRef = await addDoc(collection(db, "podcasts"), {
+            title: podcastData.title,
+            description: podcastData.description,
+            category: podcastData.category,
+            audioUrl,
+            imageUrl,
+            createdBy: podcastData.createdBy,
+            createdAt: new Date(),
+        });
+
+        return docRef.id;
+    } catch (error) {
+        console.error("Error adding podcast: ", error);
+        throw error;
+    }
+};
+
 export const getPodcasts = async (): Promise<Podcast[]> => {
-  try {
-    const querySnapshot = await getDocs(podcastCollection);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Podcast)); // המרת המסמכים לפורמט הפודקאסט והחזרתם
-  } catch (error) {
-    console.error("Error getting podcasts: ", error);
-    throw error; // זריקת שגיאה כדי לטפל בה בחוץ
-  }
+    const querySnapshot = await getDocs(collection(db, "podcasts"));
+    return querySnapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+    } as Podcast));
 };
 
-// פונקציה למחיקת פודקאסט לפי מזהה
-export const deletePodcast = async (id: string): Promise<void> => {
-  try {
-    await deleteDoc(doc(db, "podcasts", id)); // מחיקת מסמך הפודקאסט מה-Firestore
-  } catch (error) {
-    console.error("Error deleting podcast: ", error);
-    throw error; // זריקת שגיאה כדי לטפל בה בחוץ
-  }
+export const deletePodcast = async (podcastId: string): Promise<void> => {
+    try {
+        // מקבלים את פרטי הפודקאסט כדי למחוק גם את הקבצים המשויכים
+        const podcastDoc = await getDoc(doc(db, "podcasts", podcastId));
+        const podcastData = podcastDoc.data();
+
+        // מוחקים קבצים מהאחסון אם קיימים
+        if (podcastData?.audioUrl) {
+            const audioRef = ref(storage, podcastData.audioUrl);
+            await deleteObject(audioRef);
+        }
+        if (podcastData?.imageUrl) {
+            const imageRef = ref(storage, podcastData.imageUrl);
+            await deleteObject(imageRef);
+        }
+
+        // מוחקים את הפודקאסט עצמו
+        await deleteDoc(doc(db, "podcasts", podcastId));
+    } catch (error) {
+        console.error("Error deleting podcast: ", error);
+        throw error;
+    }
 };
 
-// פונקציה לקבלת כל הפודקאסטים המועדפים של משתמש
+// פונקציות לניהול מועדפים
+export const addToFavorites = async (userId: string, podcastId: string): Promise<void> => {
+    const userFavoritesRef = doc(db, 'users', userId, 'favorites', podcastId);
+    await setDoc(userFavoritesRef, { addedAt: new Date() });
+};
+
+export const removeFromFavorites = async (userId: string, podcastId: string): Promise<void> => {
+    const userFavoritesRef = doc(db, 'users', userId, 'favorites', podcastId);
+    await deleteDoc(userFavoritesRef);
+};
+
 export const getFavoritePodcasts = async (userId: string): Promise<Podcast[]> => {
-  try {
-    console.log('Fetching favorites for user:', userId);
     const userFavoritesRef = collection(db, 'users', userId, 'favorites');
     const favoritesSnapshot = await getDocs(userFavoritesRef);
     
-    console.log('Number of favorites found:', favoritesSnapshot.docs.length);
-    
-    const favoritePodcasts: Podcast[] = [];
-    
+    const podcasts: Podcast[] = [];
     for (const favoriteDoc of favoritesSnapshot.docs) {
-      const podcastId = favoriteDoc.id;
-      const podcastDoc = await getDoc(doc(db, 'podcasts', podcastId));
-      
-      if (podcastDoc.exists()) {
-        favoritePodcasts.push({ id: podcastDoc.id, ...podcastDoc.data() } as Podcast);
-      }
+        const podcastDoc = await getDoc(doc(db, 'podcasts', favoriteDoc.id));
+        if (podcastDoc.exists()) {
+            podcasts.push({ id: podcastDoc.id, ...podcastDoc.data() } as Podcast);
+        }
     }
-
-    console.log('Fetched favorite podcasts:', favoritePodcasts);
-    return favoritePodcasts; // החזרת רשימת הפודקאסטים המועדפים
-  } catch (error) {
-    console.error('Error fetching favorite podcasts:', error);
-    throw error; // זריקת שגיאה כדי לטפל בה בחוץ
-  }
-};
-
-// פונקציה להוספת פודקאסט למועדפים של משתמש
-export const addToFavorites = async (userId: string, podcastId: string): Promise<void> => {
-  try {
-    const userFavoritesRef = doc(db, 'users', userId, 'favorites', podcastId);
-    await setDoc(userFavoritesRef, { addedAt: new Date() }); // הוספת הפודקאסט למועדפים עם תאריך הוספה
-    console.log(`Added podcast ${podcastId} to favorites for user ${userId}`);
-  } catch (error) {
-    console.error('Error adding to favorites:', error);
-    throw error; // זריקת שגיאה כדי לטפל בה בחוץ
-  }
-};
-
-// פונקציה להסרת פודקאסט מהמועדפים של משתמש
-export const removeFromFavorites = async (userId: string, podcastId: string): Promise<void> => {
-  try {
-    const userFavoritesRef = doc(db, 'users', userId, 'favorites', podcastId);
-    await deleteDoc(userFavoritesRef); // מחיקת הפודקאסט מהמועדפים
-    console.log(`Removed podcast ${podcastId} from favorites for user ${userId}`);
-  } catch (error) {
-    console.error('Error removing from favorites:', error);
-    throw error; // זריקת שגיאה כדי לטפל בה בחוץ
-  }
-};
-
-// פונקציה לבדיקה אם פודקאסט נמצא במועדפים של משתמש
-export const isFavorite = async (userId: string, podcastId: string): Promise<boolean> => {
-  try {
-    const userFavoriteRef = doc(db, 'users', userId, 'favorites', podcastId);
-    const favoriteDoc = await getDoc(userFavoriteRef);
-    return favoriteDoc.exists(); // בדיקת קיום המסמך שמסמן שהפודקאסט הוא מועדף
-  } catch (error) {
-    console.error('Error checking if podcast is favorite:', error);
-    throw error; // זריקת שגיאה כדי לטפל בה בחוץ
-  }
+    
+    return podcasts;
 };

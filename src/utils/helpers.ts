@@ -1,5 +1,5 @@
 import { Podcast } from "../types";
-import db from "../firebase/firestore"; // ייבוא של Firestore כברירת מחדל
+import { db } from "../config/firebase.config"; // ייבוא של Firestore כברירת מחדל
 import { collection, query, where, getDocs } from "firebase/firestore";
 
 // פונקציה לחיפוש פודקאסטים לפי מונח חיפוש או קטגוריה

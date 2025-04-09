@@ -1,5 +1,11 @@
-import storage from "../firebase/storage";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+// src/services/storageService.ts
+// קובץ זה אחראי על אחסון וניהול קבצים (תמונות, אודיו)
+import { storage } from "../config/firebase.config";
+import { 
+    ref, 
+    uploadBytes, 
+    getDownloadURL 
+} from "firebase/storage";
 
 // פונקציה להעלאת קובץ ל-Firebase Storage והחזרת URL של הקובץ
 export const uploadFile = async (file: File, path: string): Promise<string> => {

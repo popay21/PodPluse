@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../firebase';
+import { auth } from '../config/firebase.config';
 import { Podcast } from '../types';
 import { getFavoritePodcasts } from '../services/podcastService';
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../config/firebase.config';
 import { Podcast, CATEGORIES, PodcastCategory } from '../types';
 import { FaSearch, FaSort } from 'react-icons/fa';
 

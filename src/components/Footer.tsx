@@ -11,7 +11,7 @@ const Footer: React.FC = () => {
           
           {/* סקשן טקסט עם תיאור קצר של האתר */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold">PodPulse</h3>
+            <h3 className="text-2xl font-bold">PodPlus</h3>
             <p className="text-gray-300">Discover, listen, and engage with your favorite podcasts.</p>
           </div>
 
@@ -82,7 +82,7 @@ const Footer: React.FC = () => {
 
         {/* שורת זכויות יוצרים בתחתית הפוטר */}
         <div className="mt-8 pt-8 border-t border-gray-700">
-          <p className="text-center text-gray-300">&copy; 2024 PodPulse. All rights reserved.</p>
+          <p className="text-center text-gray-300">&copy; 2024 PodPlus. All rights reserved.</p>
         </div>
       </div>
     </footer>

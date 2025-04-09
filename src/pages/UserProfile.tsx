@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { Link } from 'react-router-dom';
-import { auth, db } from '../firebase';
+import { db, auth } from '../config/firebase.config';
 import { collection, query, getDocs, doc, getDoc } from 'firebase/firestore';
 import { Podcast } from '../types';
 import { isAdmin } from '../services/authService';

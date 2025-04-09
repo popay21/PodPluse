@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../firebase';
+import { auth } from '../config/firebase.config';
 import { checkAdminStatus } from '../utils';
 
 const Header: React.FC = () => {
@@ -34,7 +34,7 @@ const Header: React.FC = () => {
     <header className="bg-gradient-to-r from-purple-600 to-indigo-800 text-white shadow-lg">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         {/* קישור לדף הבית עם שם האתר */}
-        <Link to="/" className="text-2xl font-bold">PodPulse</Link>
+        <Link to="/" className="text-2xl font-bold">PodPlus</Link>
         <nav>
           <ul className="flex space-x-4">
             {!user ? (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, query, where, onSnapshot, Timestamp, orderBy, updateDoc, doc } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db, auth } from '../config/firebase.config';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { FaStar, FaThumbsUp, FaSort } from 'react-icons/fa';
 

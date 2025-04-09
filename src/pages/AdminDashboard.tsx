@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useNavigate } from 'react-router-dom';
-import { auth, storage } from '../firebase';
+import { auth, storage } from '../config/firebase.config';
 import { addPodcast, deletePodcast, getPodcasts, makeUserAdmin } from '../services';
 import { checkAdminStatus } from '../utils';
 import { PodcastCategory, Podcast } from '../types';

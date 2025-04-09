@@ -1,36 +1,72 @@
-import { isAdmin } from './authService';
+// src/services/index.ts
+
+// ייבוא השירותים העיקריים שלנו לאחר הארגון מחדש
 import * as userService from './userService';
-import * as authService from './authService';
 import * as podcastService from './podcastService';
-import * as storageService from './storageService';
+import { CommentService } from './commentService';
 
-// ייצוא ישיר של פונקציות ספציפיות
-export { isAdmin };
-
-// ייצוא כל התוכן של השירותים
-export * from './authService';
-export * from './podcastService';
-export * from './storageService';
-
-// ייצוא פונקציות מ-userService
+// ייצוא כל הפונקציות הקשורות למשתמשים
 export const {
-  makeUserAdmin: userServiceMakeUserAdmin,
-  // הוסף כאן פונקציות נוספות אם יש
+    login,
+    register,
+    logout,
+    getUserProfile,
+    updateUserProfile,
+    isAdmin,
+    makeUserAdmin
 } = userService;
 
-// הגדרת makeUserAdmin כפונקציה ברירת מחדל אם היא לא קיימת ב-userService
-const defaultMakeUserAdmin = async (uid: string) => {
-  console.log(`Making user ${uid} an admin`);
-  // יש להחליף את זה עם הלוגיקה האמיתית אם נדרש
+// ייצוא כל הפונקציות הקשורות לפודקאסטים
+export const {
+    addPodcast,
+    getPodcasts,
+    deletePodcast,
+    addToFavorites,
+    removeFromFavorites,
+    getFavoritePodcasts
+} = podcastService;
+
+// ייצוא כל הפונקציות הקשורות לתגובות
+export const {
+    addComment,
+    getCommentsForPodcast,
+    updateComment,
+    addLike,
+    deleteComment,
+    getAverageRating
+} = CommentService;
+
+// ממשק לתשובות מהשירותים שלנו - מסייע בטיפול בשגיאות ומצבי הצלחה
+export interface ServiceResponse<T = void> {
+    success: boolean;
+    data?: T;
+    error?: string;
+}
+
+// פונקציית עזר לטיפול באסינכרוניות ושגיאות באופן אחיד
+export async function handleServiceCall<T>(
+    serviceFunction: () => Promise<T>
+): Promise<ServiceResponse<T>> {
+    try {
+        const data = await serviceFunction();
+        return { success: true, data };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'An unknown error occurred'
+        };
+    }
+}
+
+// ייצוא אובייקט שירותים מרוכז - שימושי כשצריך גישה לכל הפונקציות של שירות ספציפי
+export const services = {
+    user: userService,
+    podcast: podcastService,
+    comments: CommentService
 };
 
-// ייצוא makeUserAdmin, משתמש בגרסה מ-userService אם קיימת, אחרת בגרסת ברירת המחדל
-export const makeUserAdmin = userServiceMakeUserAdmin || defaultMakeUserAdmin;
-
-// ייצוא אובייקטים מלאים של השירותים (אופציונלי, אם נדרש)
-export const services = {
-  auth: authService,
-  podcast: podcastService,
-  storage: storageService,
-  user: userService
+// שמירה על תאימות לאחור - במידה וקוד קיים משתמש בפונקציות הישנות
+export const makeUserAdminLegacy = async (uid: string) => {
+    console.warn('makeUserAdminLegacy is deprecated, please use makeUserAdmin from userService');
+    return await userService.makeUserAdmin(uid);
 };

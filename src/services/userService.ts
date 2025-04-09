@@ -1,37 +1,66 @@
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "../firebase";
-import { User } from "firebase/auth";
+// src/services/userService.ts
 
-// פונקציה להענקת הרשאות מנהל למשתמש על ידי עדכון מסמך המשתמש ב-Firestore
-export const makeUserAdmin = async (uid: string) => {
-  try {
-    const userRef = doc(db, "users", uid); // יצירת רפרנס למסמך המשתמש ב-Firestore
-    await updateDoc(userRef, {
-      isAdmin: true // עדכון השדה isAdmin ל-true
-    });
-    console.log(`User ${uid} has been successfully made an admin.`); // הודעת הצלחה בלוג
-  } catch (error) {
-    console.error("Error making user admin: ", error);
-    // כאן אפשר להוסיף ניהול שגיאה נוסף אם צריך, כמו להודיע למשתמש
-    throw error; // זריקת שגיאה כדי לטפל בה בחוץ
-  }
+import { auth, db } from '../config/firebase.config';
+import { 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword, 
+    signOut,
+    User 
+} from "firebase/auth";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+
+// ממשק למשתמש שמאחד את כל המידע שאנחנו צריכים על משתמש
+interface UserData {
+    uid: string;
+    email: string;
+    name: string;
+    age?: number;
+    isAdmin: boolean;
+    createdAt: Date;
+}
+
+// פונקציות אימות בסיסיות
+export const login = async (email: string, password: string) => {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    return userCredential.user;
 };
 
-// פונקציה לבדיקת האם משתמש הוא מנהל על סמך הנתונים ב-Firestore
-export const isAdmin = async (user: User): Promise<boolean> => {
-  if (!user) {
-    console.log("No user provided to isAdmin check"); // הודעה במקרה שאין משתמש
-    return false; // אם אין משתמש, החזרה של false
-  }
+export const register = async (email: string, password: string, name: string, age?: number) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
 
-  try {
-    const userDoc = await getDoc(doc(db, "users", user.uid)); // שליפת מסמך המשתמש מ-Firestore
-    const isAdminUser = userDoc.exists() && userDoc.data()?.isAdmin === true;
-    console.log(`Admin status for user ${user.uid}: ${isAdminUser ? 'true' : 'false'}`); // הודעת סטטוס בלוג
-    return isAdminUser; // החזרת סטטוס המנהל
-  } catch (error) {
-    console.error("Error checking admin status: ", error);
-    // כאן אפשר להוסיף ניהול שגיאה נוסף אם צריך, כמו להודיע למשתמש
-    return false; // במקרה של שגיאה, החזרה של false
-  }
+    // יצירת פרופיל משתמש בסיסי
+    await setDoc(doc(db, "users", user.uid), {
+        email: user.email,
+        name,
+        age,
+        isAdmin: false,
+        createdAt: new Date()
+    });
+
+    return user;
+};
+
+export const logout = async () => {
+    await signOut(auth);
+};
+
+// פונקציות ניהול פרופיל והרשאות
+export const getUserProfile = async (userId: string): Promise<UserData | null> => {
+    const userDoc = await getDoc(doc(db, "users", userId));
+    return userDoc.exists() ? userDoc.data() as UserData : null;
+};
+
+export const updateUserProfile = async (userId: string, data: Partial<UserData>) => {
+    await updateDoc(doc(db, "users", userId), data);
+};
+
+export const isAdmin = async (user: User | null): Promise<boolean> => {
+    if (!user) return false;
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    return userDoc.exists() && userDoc.data()?.isAdmin === true;
+};
+
+export const makeUserAdmin = async (userId: string) => {
+    await updateDoc(doc(db, "users", userId), { isAdmin: true });
 };
